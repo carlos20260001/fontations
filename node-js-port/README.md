@@ -23,12 +23,40 @@ Only what `epaint` actually uses:
 |---|---|---|
 | `metrics.rs` | glyph advance, extents, vertical metrics, `advance_width()` | TODO |
 | `charmap.rs` | codepoint -> glyph id | TODO |
-| `outline/` | glyph outlines (path) extraction | TODO |
+| `outline/` | glyph outlines (path) extraction | glyf done; CFF WIP |
 | `instance.rs` | collection + `FontRef` handle, metrics | TODO |
 
 Not ported (egui does not use them): `attribute.rs`, `bitmap.rs`,
 `color/`, `decycler.rs`, `glyph_name.rs` (`HB_TINY`-stripped in the JS
 shaper too), `setting.rs`, `variation.rs`, `string.rs`.
+
+## Status
+
+Done and tested:
+
+- sfnt container, TrueType collections, `head`/`hhea`/`hmtx`/`maxp`/
+  `OS/2`/`post`/`cmap` (formats 4 and 12)/`loca`/`glyf`
+- `Size` (with FreeType-compatible fixed-point scaling), `Location`,
+  `FixedScaleFactor`
+- `Metrics` and `GlyphMetrics`, including the FreeType line-metrics
+  fallback chain
+- `glyf` outlines: simple glyphs (quadratic contours, implied on-curve
+  points) and composite glyphs (all transform variants, depth-limited)
+
+**Still outstanding - do not consider this port finished:**
+
+- **CFF / CFF2 outlines.** A first implementation was written and then
+  withdrawn: the Type 2 interpreter produced degenerate paths (zero width,
+  extents past the em) against a NotoSansJP subset fixture. The INDEX and
+  Top-DICT handling needed fixing along the way. This needs a correct
+  implementation plus fixture coverage before it can be relied on.
+- **Variable fonts**: `fvar`, `avar`, `gvar`, `HVAR` (no instancing).
+- **`MVAR` metric deltas**: `Metrics::new` accepts a `Location` but
+  currently ignores it.
+- **Colour glyphs**: `CBDT`, `sbix`, `COLR`.
+- **Glyph hinting.** skrifa bundles an autohinter; epaint exposes a
+  `HintingTarget`. The port is unhinted-only. This is a deliberate
+  difference, not an oversight, and it is visible for small text.
 
 ## Interaction with the shaper
 
