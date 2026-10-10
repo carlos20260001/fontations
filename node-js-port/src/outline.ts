@@ -10,11 +10,17 @@
 import type { OutlineSource } from './sfnt.js';
 import type { TableReader } from './binary.js';
 
-/** Path commands, mirroring the segment kinds a `glyf` contour can contain. */
+/**
+ * Path commands, mirroring the segment kinds a glyph outline can contain.
+ *
+ * `glyf` contours only ever produce quadratics; `CFF` contours only ever
+ * produce cubics. A glyph is one or the other, never both.
+ */
 export type PathCommand =
   | { kind: 'MoveTo'; x: number; y: number }
   | { kind: 'LineTo'; x: number; y: number }
   | { kind: 'QuadTo'; cx: number; cy: number; x: number; y: number }
+  | { kind: 'CubicTo'; c1x: number; c1y: number; c2x: number; c2y: number; x: number; y: number }
   | { kind: 'Close' };
 
 /** A glyph outline: a sequence of contours. */
@@ -31,6 +37,11 @@ export class Path {
 
   quadTo(cx: number, cy: number, x: number, y: number): void {
     this.commands.push({ kind: 'QuadTo', cx, cy, x, y });
+  }
+
+  /** Only emitted by `CFF` outlines; see `cff.ts`. */
+  cubicTo(c1x: number, c1y: number, c2x: number, c2y: number, x: number, y: number): void {
+    this.commands.push({ kind: 'CubicTo', c1x, c1y, c2x, c2y, x, y });
   }
 
   close(): void {
@@ -63,6 +74,11 @@ export class Path {
           break;
         case 'QuadTo':
           acc(c.cx, c.cy);
+          acc(c.x, c.y);
+          break;
+        case 'CubicTo':
+          acc(c.c1x, c.c1y);
+          acc(c.c2x, c.c2y);
           acc(c.x, c.y);
           break;
         case 'Close':

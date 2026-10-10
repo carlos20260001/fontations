@@ -15,12 +15,13 @@
  * | `cmap` | codepoint -> glyph id |
  * | `loca` / `glyf` | outlines |
  *
- * Not implemented: `CFF `/`CFF2` (Type 2 charstrings), variable-font
+ * Not implemented: `CFF2`, variable-font
  * instancing (`gvar`, `HVAR`, `avar`, `fvar`, `STAT`), colour tables
  * (`CBDT`, `sbix`, `COLR`). These are recorded as gaps in the README.
  */
 
 import { TableReader } from './binary.js';
+import { CffSource } from './cff.js';
 
 /** A parsed `head` table. */
 export interface Head {
@@ -256,6 +257,18 @@ export class FontRef {
     const head = this.head();
     if (!loca || !glyf || !head) return undefined;
     return new OutlineSource(loca, glyf, head.indexToLocFormat, head.unitsPerEm);
+  }
+
+  /**
+   * `CFF ` outline access. Returns `undefined` for TrueType outlines.
+   *
+   * A font is either TrueType (`glyf`) or CFF (`CFF `), never both, so exactly
+   * one of `outline_glyphs` and `outline_cff` returns a value.
+   */
+  outline_cff(): CffSource | undefined {
+    const cff = this.tables.get('CFF ');
+    if (!cff) return undefined;
+    return new CffSource(cff.bytes);
   }
 }
 

@@ -3,3 +3,8 @@ Cargo.lock
 .venv/
 venv/
 .DS_Store
+
+# Node
+node_modules/
+dist/
+*.tsbuildinfo

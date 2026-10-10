@@ -23,7 +23,7 @@ Only what `epaint` actually uses:
 |---|---|---|
 | `metrics.rs` | glyph advance, extents, vertical metrics, `advance_width()` | TODO |
 | `charmap.rs` | codepoint -> glyph id | TODO |
-| `outline/` | glyph outlines (path) extraction | glyf done; CFF WIP |
+| `outline/` | glyph outlines (path) extraction | glyf + CFF done; CFF2 outstanding |
 | `instance.rs` | collection + `FontRef` handle, metrics | TODO |
 
 Not ported (egui does not use them): `attribute.rs`, `bitmap.rs`,
@@ -43,13 +43,24 @@ Done and tested:
 - `glyf` outlines: simple glyphs (quadratic contours, implied on-curve
   points) and composite glyphs (all transform variants, depth-limited)
 
+**Outline note:** `glyf` produces quadratic segments and `CFF ` produces
+cubics, so `Path` carries both kinds (see `outline.ts`). A glyph is one or the
+other, never both.
+
+Four CFF details were the difference between correct outlines and garbage:
+a DICT reads `29` as a 32-bit integer while a charstring treats it as
+`callgsubr`; `255` is a 4-byte 16.16 fixed point in both; the optional leading
+`width` operand appears only when the operand count is odd and no width has
+been seen; and `FontMatrix` must be divided by its own scale. Separately, the
+INDEX base is the byte *after* the offset array - being one byte early clips
+every item, drops the Top DICT's trailing Private entry, and makes every
+outline empty. All are commented at their sites in `cff.ts`.
+
 **Still outstanding - do not consider this port finished:**
 
-- **CFF / CFF2 outlines.** A first implementation was written and then
-  withdrawn: the Type 2 interpreter produced degenerate paths (zero width,
-  extents past the em) against a NotoSansJP subset fixture. The INDEX and
-  Top-DICT handling needed fixing along the way. This needs a correct
-  implementation plus fixture coverage before it can be relied on.
+- **CFF2 outlines.** `CFF ` (Type 2) is implemented and tested against real
+  non-CID and CID fonts. CFF2 differs in its number grammar and its
+  interpreter, and is not yet ported.
 - **Variable fonts**: `fvar`, `avar`, `gvar`, `HVAR` (no instancing).
 - **`MVAR` metric deltas**: `Metrics::new` accepts a `Location` but
   currently ignores it.
